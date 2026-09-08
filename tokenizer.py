@@ -1,4 +1,5 @@
 from datasets import load_dataset
+from collections import Counter
 
 ds = load_dataset("wikimedia/wikipedia", "20231101.ko", split="train", streaming=True)
 
@@ -78,16 +79,7 @@ vocab_size = 1300
 merges = []
 
 while len(token_to_id) < vocab_size:
-    pair_counts = {}
-
-    for i in range(len(tokens)-1):
-        pair = (tokens[i], tokens[i+1])
-
-        if pair in pair_counts:
-            pair_counts[pair] += 1
-        else:
-            pair_counts[pair] = 1
-
+    pair_counts = Counter(zip(tokens, tokens[1:]))
 
     most_common_pair = max(pair_counts, key=pair_counts.get)
     merges.append(most_common_pair)
@@ -111,18 +103,3 @@ while len(token_to_id) < vocab_size:
             i += 1
 
     tokens = merged_tokens
-
-
-sample = "대한민국은"
-
-encoded = encode(sample)
-decoded = decode(encoded)
-
-print("원문:", sample)
-print("인코딩:", encoded)
-print("디코딩:", decoded)
-print("복원 성공:", decoded == sample)
-print("문자 수:", len(sample))
-print("토큰 수:", len(encoded))
-
-print("merge 예시:", merges[:20])
