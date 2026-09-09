@@ -139,12 +139,3 @@ while len(token_to_id) < vocab_size:
     tokens = merged_tokens
 
 save_tokenizer()
-
-sample = "대한민국은"
-
-encoded = encode(sample)
-decoded = decode(encoded)
-
-print(encoded)
-print(decoded)
-print(decoded == sample)
