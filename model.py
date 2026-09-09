@@ -4,6 +4,7 @@ from tokenizer import load_tokenizer, encode
 
 d_model = 512 # 512차원
 num_heads = 8 # 헤드 수
+d_ff = 2048 # MLP 차원
 token_to_id, id_to_token, merges = load_tokenizer()
 
 # embedding
@@ -118,6 +119,26 @@ class CausalSelfAttention(nn.Module):
         out = self.out_proj(out)
 
         return out
+
+class SwiGLU(nn.Module):
+    def __init__(self, d_model, d_ff):
+        super().__init__()
+
+        self.gate_proj = nn.Linear(d_model, d_ff)
+        self.up_proj = nn.Linear(d_model, d_ff)
+        self.down_proj = nn.Linear(d_ff, d_model)
+
+    def forward(self, x):
+        gate = self.gate_proj(x)
+        up = self.up_proj(x)
+
+        gate = torch.nn.functional.silu(gate)
+
+        x = gate * up
+        x = self.down_proj(x)
+
+        return x
+
 
 class DecoderBlock(nn.Module):
     def __init__(self, d_model, num_heads):
