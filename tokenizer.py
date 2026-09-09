@@ -130,3 +130,13 @@ for i in range(len(tokens)):
         next.append(-1)
     else:
         next.append(i + 1)
+
+left = 1
+right = next[left]
+after = next[right]
+
+tokens[left] = new_id
+next[left] = after
+
+if after != -1:
+    prev[after] = left
