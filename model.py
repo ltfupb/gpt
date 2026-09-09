@@ -37,6 +37,39 @@ class RMSNorm(nn.Module):
 norm = RMSNorm(d_model)
 x = norm(x)
 
+def apply_rope(q, k):
+    seq_len = q.shape[1]
+    d_head = q.shape[2]
+
+    freqs = 1.0 / (10000 ** (torch.arange(0, d_head, 2, device=q.device) / d_head))
+    positions = torch.arange(seq_len, device=q.device)
+
+    angles = positions[:, None] * freqs[None, :]
+    cos = torch.cos(angles)
+    sin = torch.sin(angles)
+
+    q_even = q[..., 0::2]
+    q_odd = q[..., 1::2]
+
+    q_rot_even = q_even * cos - q_odd * sin
+    q_rot_odd = q_even * sin + q_odd * cos
+
+    k_even = k[..., 0::2]
+    k_odd = k[..., 1::2]
+
+    k_rot_even = k_even * cos - k_odd * sin
+    k_rot_odd = k_even * sin + k_odd * cos
+
+    q = torch.stack([q_rot_even, q_rot_odd], dim=-1)
+    q = q.flatten(-2)
+
+    k = torch.stack([k_rot_even, k_rot_odd], dim=-1)
+    k = k.flatten(-2)
+
+    return q, k
+
+ # attention
+
 class CausalSelfAttention(nn.Module):
     def __init__(self, d_model, num_heads):
         super().__init__()
@@ -61,6 +94,8 @@ class CausalSelfAttention(nn.Module):
         q = q.transpose(0, 1)
         k = k.transpose(0, 1)
         v = v.transpose(0, 1)
+
+        q, k = apply_rope(q, k)
 
         scores = q @ k.transpose(-2, -1)
         scores = scores / (self.d_head ** 0.5)
