@@ -1,5 +1,6 @@
 from datasets import load_dataset
 from collections import Counter
+import json
 
 ds = load_dataset("wikimedia/wikipedia", "20231101.ko", split="train", streaming=True)
 
@@ -74,6 +75,39 @@ def decode(ids):
         text += token
     return text
 
+def save_tokenizer():
+    vocabfile = open("vocab.json", "w", encoding="utf-8")
+    json.dump(token_to_id, vocabfile, ensure_ascii=False, indent=2)
+    vocabfile.close()
+
+    merge_list = []
+    mergefile = open("merges.json", "w", encoding="utf-8")
+    for pair, new_id in merges.items():
+        merge_list.append([pair[0], pair[1], new_id])
+    json.dump(merge_list, mergefile, ensure_ascii=False, indent=2)
+    mergefile.close()
+
+def load_tokenizer():
+    vocabfile = open("vocab.json", "r", encoding="utf-8")
+    token_to_id = json.load(vocabfile)
+    vocabfile.close()
+
+    id_to_token = {}
+
+    for token, token_id in token_to_id.items():
+        id_to_token[token_id] = token
+
+    mergefile = open("merges.json", "r", encoding="utf-8")
+    merge_list = json.load(mergefile)
+    mergefile.close()
+
+    merges = {}
+
+    for item in merge_list:
+        merges[(item[0], item[1])] = item[2]
+
+    return token_to_id, id_to_token, merges
+
 
 vocab_size = 1300
 merges = {}
@@ -104,3 +138,13 @@ while len(token_to_id) < vocab_size:
 
     tokens = merged_tokens
 
+save_tokenizer()
+
+sample = "대한민국은"
+
+encoded = encode(sample)
+decoded = decode(encoded)
+
+print(encoded)
+print(decoded)
+print(decoded == sample)
