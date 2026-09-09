@@ -74,6 +74,8 @@ class CausalSelfAttention(nn.Module):
     def __init__(self, d_model, num_heads):
         super().__init__()
 
+        assert d_model % num_heads == 0
+
         self.num_heads = num_heads
         self.d_head = d_model // num_heads
 
@@ -116,3 +118,11 @@ class CausalSelfAttention(nn.Module):
         out = self.out_proj(out)
 
         return out
+
+class DecoderBlock(nn.Module):
+    def __init__(self, d_model, num_heads):
+        super().__init__()
+
+        self.norm1 = RMSNorm(d_model)
+        self.attention = CausalSelfAttention(d_model, num_heads)
+        self.norm2 = RMSNorm(d_model)
