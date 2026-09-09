@@ -41,9 +41,13 @@ for token in text:
     tokens.append(token_id)
 
 def encode(text):
-    tokens = list(text)
+    tokens = []
 
-    for pair in merges:
+    for token in text:
+        token_id = token_to_id[token]
+        tokens.append(token_id)
+
+    for pair, new_id in merges.items():
         merged_tokens = []
         i = 0
 
@@ -52,8 +56,7 @@ def encode(text):
                 i < len(tokens) - 1
                 and (tokens[i], tokens[i + 1]) == pair
             ):
-                new_token = pair[0] + pair[1]
-                merged_tokens.append(new_token)
+                merged_tokens.append(new_id)
                 i += 2
             else:
                 merged_tokens.append(tokens[i])
@@ -61,13 +64,7 @@ def encode(text):
 
         tokens = merged_tokens
 
-    ids = []
-
-    for token in tokens:
-        token_id = token_to_id[token]
-        ids.append(token_id)
-
-    return ids
+    return tokens
 
 
 def decode(ids):
@@ -80,17 +77,17 @@ def decode(ids):
 
 
 vocab_size = 1300
-merges = []
+merges = {}
 
 while len(token_to_id) < vocab_size:
     pair_counts = Counter(zip(tokens, tokens[1:]))
 
     most_common_pair = max(pair_counts, key=pair_counts.get)
-    merges.append(most_common_pair)
 
     new_token = id_to_token[most_common_pair[0]] + id_to_token[most_common_pair[1]]
     new_id = len(id_to_token)
 
+    merges[most_common_pair] = new_id
     token_to_id[new_token] = new_id
     id_to_token[new_id] = new_token
 
@@ -100,7 +97,7 @@ while len(token_to_id) < vocab_size:
 
     while i < len(tokens):
         if (i < len(tokens) - 1 and (tokens[i], tokens[i+1]) == most_common_pair):
-            merged_tokens.append(new_token)
+            merged_tokens.append(new_id)
             i += 2
         else:
             merged_tokens.append(tokens[i])
@@ -108,3 +105,28 @@ while len(token_to_id) < vocab_size:
 
     tokens = merged_tokens
 
+pair_positions = {}
+
+i = 0
+
+while i < len(tokens) - 1:
+    pair = (tokens[i], tokens[i+1])
+    if pair not in pair_positions:
+        pair_positions[pair] = [i]
+    else:
+        pair_positions[pair].append(i)
+    i += 1
+
+prev = []
+next = []
+
+for i in range(len(tokens)):
+    if i == 0:
+        prev.append(-1)
+    else:
+        prev.append(i - 1)
+
+    if i == len(tokens) - 1:
+        next.append(-1)
+    else:
+        next.append(i + 1)
